@@ -29,7 +29,7 @@ if os.path.exists(LOG_FILE):
     df = pd.read_csv(LOG_FILE)
     next_number = df["整理券番号"].max() + 1
 else:
-    df = pd.DataFrame(columns=["整理券番号", "学籍番号", "氏名", "メール"])
+    df = pd.DataFrame(columns=["整理券番号", "学籍番号", "メール"])
     next_number = 1
 
 # ------------------------
@@ -65,7 +65,7 @@ with st.expander("⚠️ ログと整理券番号をリセットする"):
         else:
             if os.path.exists(LOG_FILE):
                 os.remove(LOG_FILE)
-            df = pd.DataFrame(columns=["整理券番号", "学籍番号", "氏名", "メール"])
+            df = pd.DataFrame(columns=["整理券番号", "学籍番号", "メール"])
             df.to_csv(LOG_FILE, index=False)
             next_number = 1
             st.success("ログと整理券番号をリセットしました")
@@ -77,7 +77,6 @@ st.subheader("🎟 整理券情報入力")
 
 with st.form("ticket_form"):
     gakuseki = st.text_input("学籍番号（10桁）", max_chars=10)
-    name = st.text_input("氏名")
     email_prefix = st.text_input("学内メールID（英数字7桁）", max_chars=7)
     submitted = st.form_submit_button("整理券を発行して送信")
 
@@ -95,10 +94,9 @@ if submitted:
             # 画像生成
             image = Image.open(BASE_IMAGE).convert("RGB")
             draw = ImageDraw.Draw(image)
-            font = ImageFont.truetype(FONT_PATH, 40)
-            draw.text((50, 50), f"整理券番号: {next_number}", font=font, fill="black")
-            draw.text((50, 120), f"氏名: {name}", font=font, fill="black")
-            draw.text((50, 190), f"学籍番号: {gakuseki}", font=font, fill="black")
+            font = ImageFont.truetype(FONT_PATH, 36)
+            draw.text((50, 60), f"id: {gakuseki}", font=font, fill="black")
+            draw.text((50, 130), f"number: {next_number}", font=font, fill="black")
 
             img_buffer = io.BytesIO()
             image.save(img_buffer, format="PNG")
@@ -109,12 +107,12 @@ if submitted:
             msg["From"] = EMAIL_FROM
             msg["To"] = email
             msg["Subject"] = "【テストメール】【学祭】アーティストライブ 整理券のご案内"
-            body = f"""{name} さん
+            body = f"""学祭アーティストライブの整理券を発行しました。
 
-学祭アーティストライブの整理券を発行しました。
-整理券番号は「{next_number}」です。
+整理券番号: {next_number}
+学籍番号: {gakuseki}
 
-当日はこの画像を提示してください。
+当日は添付画像を提示してください。
 """
             msg.attach(MIMEText(body, "plain"))
 
@@ -127,7 +125,7 @@ if submitted:
                 server.send_message(msg)
 
             # ログ保存
-            new_row = pd.DataFrame([[next_number, gakuseki, name, email]], columns=df.columns)
+            new_row = pd.DataFrame([[next_number, gakuseki, email]], columns=df.columns)
             df = pd.concat([df, new_row], ignore_index=True)
             df.to_csv(LOG_FILE, index=False)
 
