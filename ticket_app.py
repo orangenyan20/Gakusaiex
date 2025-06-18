@@ -152,7 +152,7 @@ if submitted:
             st.error(f"送信失敗: {e}")
 
 # ------------------------
-# CSV確認・ダウンロード
+# CSV確認・ダウンロード (.txt形式)
 # ------------------------
 st.subheader("📋 整理券ログ")
 
@@ -163,11 +163,12 @@ if st.checkbox("ログを表示する"):
     st.dataframe(df)
 
 if not df.empty:
-    csv_buffer = io.StringIO()
-    df.to_csv(csv_buffer, index=False)
+    txt_buffer = io.BytesIO()
+    df.to_csv(txt_buffer, index=False, encoding="shift_jis")
+    txt_buffer.seek(0)
     st.download_button(
-        label="📥 CSVをダウンロード",
-        data=csv_buffer.getvalue(),
-        file_name="整理券ログ.csv",
-        mime="text/csv"
+        label="📥 整理券ログをダウンロード（.txt）",
+        data=txt_buffer,
+        file_name="整理券ログ.txt",
+        mime="text/plain"
     )
