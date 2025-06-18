@@ -7,9 +7,11 @@ from email.mime.text import MIMEText
 from email import encoders
 from PIL import Image, ImageDraw, ImageFont
 import os
+import io
+import re
 
 # ------------------------
-# 💡 設定（Secretsから）
+# 設定（Secretsから取得）
 # ------------------------
 EMAIL_FROM = st.secrets["email_from"]
 APP_PASSWORD = st.secrets["app_password"]
@@ -52,16 +54,19 @@ if not st.session_state.authenticated:
 # ------------------------
 st.subheader("🎟 整理券情報入力")
 
-gakuseki = st.text_input("学籍番号（10桁）")
-name = st.text_input("氏名")
-email_prefix = st.text_input("学内メール（5桁）")
-email = f"{email_prefix}@yamaguchi-u.ac.jp"
+with st.form("ticket_form"):
+    gakuseki = st.text_input("学籍番号（10桁）", max_chars=10)
+    name = st.text_input("氏名")
+    email_prefix = st.text_input("学内メールID（英数字7桁）", max_chars=7)
+    submitted = st.form_submit_button("整理券を発行して送信")
 
-if st.button("整理券を発行して送信"):
+if submitted:
+    email = f"{email_prefix}@yamaguchi-u.ac.jp"
+
     if len(gakuseki) != 10 or not gakuseki.isdigit():
         st.error("学籍番号は10桁の数字で入力してください")
-    elif len(email_prefix) != 5 or not email_prefix.isdigit():
-        st.error("学内メールは5桁の数字で入力してください")
+    elif not re.fullmatch(r"[A-Za-z0-9]{7}", email_prefix):
+        st.error("メールIDは英数字7桁で入力してください")
     elif email in df["メール"].values:
         st.warning("このメールにはすでに整理券が発行されています")
     else:
@@ -74,14 +79,14 @@ if st.button("整理券を発行して送信"):
             draw.text((50, 120), f"氏名: {name}", font=font, fill="black")
             draw.text((50, 190), f"学籍番号: {gakuseki}", font=font, fill="black")
 
-            output_path = f"ticket_{next_number}.png"
+            output_path = f"整理券_{next_number}.png"
             image.save(output_path)
 
             # メール作成
             msg = MIMEMultipart()
             msg["From"] = EMAIL_FROM
             msg["To"] = email
-            msg["Subject"] = "【学祭】アーティストライブ 整理券のご案内"
+            msg["Subject"] = "【テストメール】【学祭】アーティストライブ 整理券のご案内"
             body = f"""{name} さん
 
 学祭アーティストライブの整理券を発行しました。
@@ -95,7 +100,7 @@ if st.button("整理券を発行して送信"):
                 part = MIMEBase("application", "octet-stream")
                 part.set_payload(f.read())
                 encoders.encode_base64(part)
-                part.add_header("Content-Disposition", f"attachment; filename=整理券_{next_number}.png")
+                part.add_header("Content-Disposition", "attachment; filename=整理券.png")
                 msg.attach(part)
 
             with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT) as server:
@@ -112,3 +117,21 @@ if st.button("整理券を発行して送信"):
 
         except Exception as e:
             st.error(f"送信失敗: {e}")
+
+# ------------------------
+# CSV確認・ダウンロード
+# ------------------------
+st.subheader("📋 整理券ログ")
+
+if st.checkbox("ログを表示する"):
+    st.dataframe(df)
+
+if not df.empty:
+    csv_buffer = io.StringIO()
+    df.to_csv(csv_buffer, index=False)
+    st.download_button(
+        label="📥 CSVをダウンロード",
+        data=csv_buffer.getvalue(),
+        file_name="整理券ログ.csv",
+        mime="text/csv"
+    )
