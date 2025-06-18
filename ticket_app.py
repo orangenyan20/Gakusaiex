@@ -2,13 +2,12 @@ import streamlit as st
 import pandas as pd
 import smtplib
 from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
+from email.mime.image import MIMEImage
 from email.mime.text import MIMEText
-from email import encoders
-from PIL import Image, ImageDraw, ImageFont
 import os
 import io
 import re
+from PIL import Image, ImageDraw, ImageFont
 
 # ------------------------
 # 設定（Secretsから取得）
@@ -50,6 +49,28 @@ if not st.session_state.authenticated:
         st.stop()
 
 # ------------------------
+# ログリセット機能
+# ------------------------
+with st.expander("⚠️ ログと整理券番号をリセットする"):
+    with st.form("reset_form"):
+        pw_check = st.text_input("パスワードを再入力してください", type="password")
+        confirm = st.checkbox("本当にログをリセットしてよろしいですか？")
+        reset_submit = st.form_submit_button("リセット実行")
+
+    if reset_submit:
+        if pw_check != PASSWORD:
+            st.error("パスワードが間違っています")
+        elif not confirm:
+            st.warning("確認にチェックが入っていません")
+        else:
+            if os.path.exists(LOG_FILE):
+                os.remove(LOG_FILE)
+            df = pd.DataFrame(columns=["整理券番号", "学籍番号", "氏名", "メール"])
+            df.to_csv(LOG_FILE, index=False)
+            next_number = 1
+            st.success("ログと整理券番号をリセットしました")
+
+# ------------------------
 # 入力フォーム
 # ------------------------
 st.subheader("🎟 整理券情報入力")
@@ -79,8 +100,9 @@ if submitted:
             draw.text((50, 120), f"氏名: {name}", font=font, fill="black")
             draw.text((50, 190), f"学籍番号: {gakuseki}", font=font, fill="black")
 
-            output_path = f"整理券_{next_number}.png"
-            image.save(output_path)
+            img_buffer = io.BytesIO()
+            image.save(img_buffer, format="PNG")
+            img_buffer.seek(0)
 
             # メール作成
             msg = MIMEMultipart()
@@ -96,12 +118,9 @@ if submitted:
 """
             msg.attach(MIMEText(body, "plain"))
 
-            with open(output_path, "rb") as f:
-                part = MIMEBase("application", "octet-stream")
-                part.set_payload(f.read())
-                encoders.encode_base64(part)
-                part.add_header("Content-Disposition", "attachment; filename=整理券.png")
-                msg.attach(part)
+            image_part = MIMEImage(img_buffer.read(), _subtype="png", name="整理券.png")
+            image_part.add_header("Content-Disposition", "attachment", filename="整理券.png")
+            msg.attach(image_part)
 
             with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT) as server:
                 server.login(EMAIL_FROM, APP_PASSWORD)
@@ -112,7 +131,6 @@ if submitted:
             df = pd.concat([df, new_row], ignore_index=True)
             df.to_csv(LOG_FILE, index=False)
 
-            next_number += 1
             st.success("整理券を送信しました🎉")
 
         except Exception as e:
@@ -122,6 +140,9 @@ if submitted:
 # CSV確認・ダウンロード
 # ------------------------
 st.subheader("📋 整理券ログ")
+
+if os.path.exists(LOG_FILE):
+    df = pd.read_csv(LOG_FILE)
 
 if st.checkbox("ログを表示する"):
     st.dataframe(df)
