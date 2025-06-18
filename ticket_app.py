@@ -25,12 +25,23 @@ FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 # ------------------------
 # ログ読み込み or 初期化
 # ------------------------
-if os.path.exists(LOG_FILE):
-    df = pd.read_csv(LOG_FILE)
-    next_number = df["整理券番号"].max() + 1
-else:
-    df = pd.DataFrame(columns=["整理券番号", "学籍番号", "氏名", "メール"])
-    next_number = 1
+def load_log():
+    if os.path.exists(LOG_FILE):
+        df = pd.read_csv(LOG_FILE)
+        if "整理券番号" in df.columns and not df["整理券番号"].isnull().all():
+            max_num = pd.to_numeric(df["整理券番号"], errors='coerce').max()
+            if pd.isna(max_num):
+                next_num = 1
+            else:
+                next_num = int(max_num) + 1
+        else:
+            next_num = 1
+        return df, next_num
+    else:
+        df = pd.DataFrame(columns=["整理券番号", "学籍番号", "氏名", "メール"])
+        return df, 1
+
+df, next_number = load_log()
 
 # ------------------------
 # ログイン画面
@@ -109,7 +120,7 @@ if submitted:
             msg = MIMEMultipart()
             msg["From"] = EMAIL_FROM
             msg["To"] = email
-            msg["Subject"] = "【テストメール】【学祭】アーティストライブ 整理券のご案内"
+            msg["Subject"] = "【テストメール】アーティストライブ 整理券のご案内"
             body = f"""{name} さん
 
 学祭アーティストライブの整理券を発行しました。
@@ -133,6 +144,9 @@ if submitted:
             df.to_csv(LOG_FILE, index=False)
 
             st.success("整理券を送信しました🎉")
+
+            # 整理券番号を次に更新
+            next_number += 1
 
         except Exception as e:
             st.error(f"送信失敗: {e}")
