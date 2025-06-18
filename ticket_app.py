@@ -164,11 +164,12 @@ if st.checkbox("ログを表示する"):
 
 if not df.empty:
     txt_buffer = io.BytesIO()
-    df.to_csv(txt_buffer, index=False, encoding="shift_jis")
-    txt_buffer.seek(0)
-    st.download_button(
-        label="📥 整理券ログをダウンロード（.txt）",
-        data=txt_buffer,
-        file_name="整理券ログ.txt",
-        mime="text/plain"
-    )
+df.to_csv(txt_buffer, index=False, sep="\t", encoding="utf-8")  # ← タブ区切り＆UTF-8
+txt_buffer.seek(0)
+
+st.download_button(
+    label="📥 整理券ログをダウンロード（タブ区切り .txt）",
+    data=txt_buffer,
+    file_name="整理券ログ.txt",  # 拡張子は .tsv でもOK！
+    mime="text/tab-separated-values"
+)
