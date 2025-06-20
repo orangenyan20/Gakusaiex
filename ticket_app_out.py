@@ -6,6 +6,7 @@ from email.mime.image import MIMEImage
 from email.mime.text import MIMEText
 import os
 import io
+import re
 from PIL import Image, ImageDraw, ImageFont
 
 # ------------------------
@@ -18,8 +19,8 @@ PASSWORD = st.secrets["admin_password"]
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 465
 BASE_IMAGE = "template.png"
-LOG_FILE = "tickets_general.csv"
-ALL_LOG_FILE = "tickets_general_all.csv"
+LOG_FILE = "tickets.csv"
+ALL_LOG_FILE = "tickets_all.csv"
 FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
 # ------------------------
@@ -30,7 +31,10 @@ def load_log():
         df = pd.read_csv(LOG_FILE)
         if "整理券番号" in df.columns and not df["整理券番号"].isnull().all():
             max_num = pd.to_numeric(df["整理券番号"], errors='coerce').max()
-            next_num = int(max_num) + 1 if not pd.isna(max_num) else 1
+            if pd.isna(max_num):
+                next_num = 1
+            else:
+                next_num = int(max_num) + 1
         else:
             next_num = 1
         return df, next_num
@@ -49,7 +53,7 @@ else:
 # ------------------------
 # ログイン画面
 # ------------------------
-st.title("🎫 学祭アーティストライブ 整理券発行アプリ（一般）")
+st.title("🎫 学祭アーティストライブ 整理券発行アプリ（一般用）")
 
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
@@ -93,46 +97,65 @@ with st.expander("📤 ログと整理券番号のメンテナンス"):
 # ------------------------
 # 入力フォーム
 # ------------------------
-st.subheader("🎟 整理券情報入力（学外・一般向け）")
+st.subheader("🎟 整理券情報入力")
+
+domain_options = ["gmail.com", "yahoo.co.jp", "icloud.com", "outlook.jp", "yamaguchi-u.ac.jp", "その他"]
 
 with st.form("ticket_form"):
     name = st.text_input("氏名")
-    email_input = st.text_input("メールアドレス（例: aaa@gmail.com または '紙' と記入）")
-    domain_options = ["gmail.com", "yahoo.co.jp", "icloud.com", "yamaguchi-u.ac.jp", "その他"]
-    domain_select = st.selectbox("メールドメインを選択（入力欄のドメインと一致させてください）", domain_options)
-    skip_mail = st.checkbox("メール送信をスキップする（紙配布用）")
-    submitted = st.form_submit_button("整理券を発行")
+    local_part = st.text_input("メールアドレスの＠より前")
+    selected_domain = st.selectbox("ドメインを選んでください（その他を選んだ場合は全体を入力）", domain_options)
+    full_email_manual = ""
+
+    if selected_domain == "その他":
+        full_email_manual = st.text_input("メールアドレスを全て入力してください（例: abc@example.com）")
+
+    skip_email = st.checkbox("メールアドレスを持っていない、または紙で整理券を受け取る")
+    submitted = st.form_submit_button("整理券を発行して送信")
 
 if submitted:
-    email = email_input.strip()
-
     if not name.strip():
         st.error("氏名を入力してください")
-    elif not email:
-        st.error("メールアドレスまたは '紙' を入力してください")
-    elif email.lower() != "紙" and ("@" not in email or (domain_select != "その他" and not email.endswith(f"@{domain_select}"))):
-        st.error(f"ドメインが '{domain_select}' ではありません。入力欄とプルダウンの一致を確認してください")
-    elif email in df["メール"].values:
+    elif skip_email:
+        email = "紙"
+    elif selected_domain == "その他":
+        if not full_email_manual or "@" not in full_email_manual:
+            st.error("メールアドレスを正しく入力してください")
+            st.stop()
+        else:
+            email = full_email_manual
+    else:
+        if not local_part or not re.fullmatch(r"[A-Za-z0-9._%+-]+", local_part):
+            st.error("＠より前を正しく入力してください")
+            st.stop()
+        email = f"{local_part}@{selected_domain}"
+
+    if email != "紙" and email in df["メール"].values:
         st.warning("このメールにはすでに整理券が発行されています")
     else:
         try:
-            # 画像生成
+            # 画像生成（氏名は入れない）
             image = Image.open(BASE_IMAGE).convert("RGB")
             draw = ImageDraw.Draw(image)
             font = ImageFont.truetype(FONT_PATH, 36)
-            draw.text((50, 60), f"name: {name}", font=font, fill="black")
-            draw.text((50, 130), f"number: {next_number}", font=font, fill="black")
+            draw.text((50, 60), f"number: {next_number}", font=font, fill="black")
 
             img_buffer = io.BytesIO()
             image.save(img_buffer, format="PNG")
             img_buffer.seek(0)
 
-            if email.lower() != "紙" and not skip_mail:
+            if email != "紙":
                 msg = MIMEMultipart()
                 msg["From"] = EMAIL_FROM
                 msg["To"] = email
                 msg["Subject"] = "【学祭】アーティストライブ 整理券のご案内"
-                body = f"""{name} さん\n\n学祭アーティストライブの整理券を発行しました。\n整理券番号は「{next_number}」です。\n\n当日はこの添付画像を提示してください。\n"""
+                body = f"""{name} さん
+
+学祭アーティストライブの整理券を発行しました。
+整理券番号は「{next_number}」です。
+
+当日はこの添付画像を提示してください。
+"""
                 msg.attach(MIMEText(body, "plain"))
 
                 image_part = MIMEImage(img_buffer.read(), _subtype="png", name="整理券.png")
@@ -147,6 +170,7 @@ if submitted:
             new_row = pd.DataFrame([[next_number, name, email]], columns=df.columns)
             df = pd.concat([df, new_row], ignore_index=True)
             df.to_csv(LOG_FILE, index=False)
+
             if os.path.exists(ALL_LOG_FILE):
                 df_all = pd.read_csv(ALL_LOG_FILE)
                 df_all = pd.concat([df_all, new_row], ignore_index=True)
@@ -157,7 +181,8 @@ if submitted:
             st.session_state.df = df
             st.session_state.next_number += 1
 
-            st.success(f"整理券番号 {next_number} を発行しました 🎉")
+            st.success(f"整理券番号 {next_number} を{'発行しました' if email == '紙' else '送信しました'}🎉")
+
         except Exception as e:
             st.error(f"送信失敗: {e}")
 
