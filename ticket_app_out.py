@@ -99,7 +99,7 @@ with st.expander("📤 ログと整理券番号のメンテナンス"):
 # ------------------------
 st.subheader("🎟 整理券情報入力")
 
-domain_options = ["gmail.com", "yahoo.co.jp", "icloud.com", "outlook.jp", "yamaguchi-u.ac.jp", "その他"]
+domain_options = ["gmail.com", "yahoo.co.jp", "yamaguchi-u.ac.jp", "au.com", "docomo.ne.jp", "softbank.ne.jp", "outlook.jp", "icloud.com", "その他"]
 
 with st.form("ticket_form"):
     name = st.text_input("氏名")
