@@ -95,7 +95,7 @@ if submitted:
                 msg["From"] = EMAIL_FROM
                 msg["To"] = email
                 msg["Subject"] = "【学祭】アーティストライブ 整理券のご案内"
-                body = f"""{name or 'お客様'} さん\n\n学祭アーティストライブの整理券を発行しました。\n整理券番号は「{next_number}」です。\n当日はこの添付画像を提示してください。"
+                body = f"""{name or 'お客様'} さん\n\n学祭アーティストライブの整理券を発行しました。\n整理券番号は「{next_number}」です。\n当日はこの添付画像を提示してください。"""
                 msg.attach(MIMEText(body, "plain"))
                 image_part = MIMEImage(img_buffer.read(), _subtype="png", name="整理券.png")
                 image_part.add_header("Content-Disposition", "attachment", filename="整理券.png")
