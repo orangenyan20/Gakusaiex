@@ -121,10 +121,10 @@ if submitted:
             # 画像生成（氏名は入れない）
             image = Image.open(BASE_IMAGE).convert("RGB")
             draw = ImageDraw.Draw(image)
+            font = ImageFont.truetype(FONT_PATH, 90)
+            draw.text((680, 300), f"{next_number}", font=font, fill="black")
             font = ImageFont.truetype(FONT_PATH, 36)
-            draw.text((50, 60), f"id: {gakuseki}", font=font, fill="black")
-            draw.text((50, 130), f"number: {next_number}", font=font, fill="black")
-
+            draw.text((660, 500), f"id: {gakuseki}", font=font, fill="black")
             img_buffer = io.BytesIO()
             image.save(img_buffer, format="PNG")
             img_buffer.seek(0)
@@ -205,3 +205,4 @@ if os.path.exists(ALL_LOG_FILE):
             file_name="整理券全体ログ.txt",
             mime="text/plain"
         )
+
