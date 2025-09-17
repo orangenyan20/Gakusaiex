@@ -53,7 +53,7 @@ else:
 # ------------------------
 # ログイン画面
 # ------------------------
-st.title("🎫 学祭アーティストライブ 整理券発行アプリ")
+st.title("学祭アーティストライブ 整理券発行アプリ")
 
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
@@ -70,7 +70,7 @@ if not st.session_state.authenticated:
 # メンテナンス機能
 # ------------------------
 st.subheader("🛠 メンテナンス")
-with st.expander("📤 ログと整理券番号のメンテナンス"):
+with st.expander("ログと整理券番号のメンテナンス"):
     with st.form("maintenance_form"):
         option = st.radio("操作を選んでください", ("何もしない", "ログをリセット", "途中から整理券番号を指定して再開"))
         new_start = st.number_input("再開する整理券番号を入力してください", min_value=1, step=1, value=1, key="restart_number")
@@ -97,7 +97,7 @@ with st.expander("📤 ログと整理券番号のメンテナンス"):
 # ------------------------
 # 入力フォーム
 # ------------------------
-st.subheader("🎟 整理券情報入力")
+st.subheader("整理券情報入力")
 
 with st.form("ticket_form"):
     gakuseki = st.text_input("学籍番号（10桁）", max_chars=10)
@@ -124,7 +124,7 @@ if submitted:
             font = ImageFont.truetype(FONT_PATH, 90)
             draw.text((680, 300), f"{next_number}", font=font, fill="black")
             font = ImageFont.truetype(FONT_PATH, 36)
-            draw.text((660, 500), f"id: {gakuseki}", font=font, fill="black")
+            draw.text((660, 500), f"{gakuseki}", font=font, fill="black")
             img_buffer = io.BytesIO()
             image.save(img_buffer, format="PNG")
             img_buffer.seek(0)
@@ -174,7 +174,7 @@ if submitted:
 # ------------------------
 # CSV確認・ダウンロード (.txt形式)
 # ------------------------
-st.subheader("📋 整理券ログ")
+st.subheader("整理券ログ")
 
 if st.checkbox("ログを表示する"):
     st.dataframe(df)
@@ -184,7 +184,7 @@ if not df.empty:
     df.to_csv(txt_buffer, sep='\t', index=False, encoding="utf-8")
     txt_buffer.seek(0)
     st.download_button(
-        label="📥 整理券ログをダウンロード（タブ区切り）",
+        label="整理券ログをダウンロード（タブ区切り）",
         data=txt_buffer,
         file_name="整理券ログ.txt",
         mime="text/plain"
@@ -192,7 +192,7 @@ if not df.empty:
 
 if os.path.exists(ALL_LOG_FILE):
     df_all = pd.read_csv(ALL_LOG_FILE)
-    st.subheader("📚 全体ログ（リセットされずに保存され続ける）")
+    st.subheader("全体ログ（リセットされずに保存され続ける）")
     if st.checkbox("全体ログを表示する"):
         st.dataframe(df_all)
     if not df_all.empty:
@@ -200,9 +200,10 @@ if os.path.exists(ALL_LOG_FILE):
         df_all.to_csv(txt_all_buffer, sep='\t', index=False, encoding="utf-8")
         txt_all_buffer.seek(0)
         st.download_button(
-            label="📥 全体ログをダウンロード（タブ区切り）",
+            label="全体ログをダウンロード（タブ区切り）",
             data=txt_all_buffer,
             file_name="整理券全体ログ.txt",
             mime="text/plain"
         )
+
 
