@@ -141,7 +141,14 @@ if submitted:
 第80回山口大学医学祭
 KANA-BOON Rolling University TOURの整理券を発行しました。
 
+集合時間　16時30分
+集合場所　講義棟B入口付近
+
 当日は係員の指示に従って学生証と一緒に、この添付画像を提示してください。
+
+なにか問題があれば
+c052ebw@yamaguchi-u.ac.jp
+にご連絡ください。
 
 """
             msg.attach(MIMEText(body, "plain"))
@@ -208,6 +215,7 @@ if os.path.exists(ALL_LOG_FILE):
             file_name="整理券全体ログ.txt",
             mime="text/plain"
         )
+
 
 
 
