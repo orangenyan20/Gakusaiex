@@ -138,10 +138,11 @@ if submitted:
             msg["Subject"] = "【学祭】アーティストライブ 整理券のご案内"
             body = f"""{name} さん
 
-学祭アーティストライブの整理券を発行しました。
-整理券番号は「{next_number}」です。
+第80回山口大学医学祭
+KANA-BOON Rolling University TOURの整理券を発行しました。
 
-当日はこの添付画像を提示してください。
+当日は係員の指示に従って学生証と一緒に、この添付画像を提示してください。
+
 """
             msg.attach(MIMEText(body, "plain"))
 
@@ -207,5 +208,6 @@ if os.path.exists(ALL_LOG_FILE):
             file_name="整理券全体ログ.txt",
             mime="text/plain"
         )
+
 
 
