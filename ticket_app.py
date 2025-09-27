@@ -132,11 +132,10 @@ if submitted:
             img_buffer.seek(0)
 
             # メール作成（氏名入り）
-           msg = MIMEMultipart()
-           msg["From"] = formataddr(("第80回医学祭実行委員", EMAIL_FROM))
-           msg["To"] = email
-           msg["Subject"] = "【学祭】アーティストライブ 整理券のご案内"
-
+            msg = MIMEMultipart()
+            msg["From"] = formataddr(("学祭実行委員", EMAIL_FROM))
+            msg["To"] = email
+            msg["Subject"] = "【学祭】アーティストライブ 整理券のご案内"
             body = f"""{name} さん
 
 学祭アーティストライブの整理券を発行しました。
@@ -208,6 +207,4 @@ if os.path.exists(ALL_LOG_FILE):
             file_name="整理券全体ログ.txt",
             mime="text/plain"
         )
-
-
 
